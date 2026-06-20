@@ -3,9 +3,10 @@ import re
 import sys
 
 from PySide6.QtCore import QEvent, QPoint, QSettings, QSize, Qt, QTimer, Signal
-from PySide6.QtGui import QMouseEvent, QPixmap
+from PySide6.QtGui import QColor, QMouseEvent, QPainter, QPen, QPixmap, QPolygon
 from PySide6.QtWidgets import (
     QApplication,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QPushButton,
@@ -27,6 +28,33 @@ EMOTION_ASSETS = {
     "serious": ASSET_DIR / "luwenxi_serious.png",
     "angry": ASSET_DIR / "luwenxi_angry.png",
 }
+
+
+class BubbleTail(QWidget):
+    """绘制向下的气泡尖角，避免依赖字体中的三角形字符。"""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setFixedSize(24, 14)
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        points = QPolygon(
+            [
+                QPoint(1, 0),
+                QPoint(self.width() - 2, 0),
+                QPoint(self.width() // 2, self.height() - 1),
+            ]
+        )
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QColor(247, 250, 246, 242))
+        painter.drawPolygon(points)
+        painter.setPen(QPen(QColor(151, 170, 153, 245), 1))
+        painter.drawLine(points[0], points[2])
+        painter.drawLine(points[2], points[1])
 
 
 class CharacterWindow(QWidget):
@@ -100,8 +128,14 @@ class CharacterWindow(QWidget):
         self.bubble_card = QWidget()
         self.bubble_card.setObjectName("bubbleCard")
         bubble_layout = QVBoxLayout(self.bubble_card)
-        bubble_layout.setContentsMargins(14, 12, 14, 10)
-        bubble_layout.setSpacing(8)
+        bubble_layout.setContentsMargins(0, 0, 0, 0)
+        bubble_layout.setSpacing(0)
+
+        self.bubble_panel = QWidget()
+        self.bubble_panel.setObjectName("bubblePanel")
+        panel_layout = QVBoxLayout(self.bubble_panel)
+        panel_layout.setContentsMargins(14, 12, 14, 10)
+        panel_layout.setSpacing(8)
 
         self.bubble = QLabel()
         self.bubble.setObjectName("speechBubble")
@@ -111,13 +145,13 @@ class CharacterWindow(QWidget):
         self.bubble.setSizePolicy(
             QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum
         )
-        bubble_layout.addWidget(self.bubble)
+        panel_layout.addWidget(self.bubble)
 
         self.action_button = QPushButton()
         self.action_button.setObjectName("bubbleAction")
         self.action_button.hide()
         self.action_button.clicked.connect(self._emit_action)
-        bubble_layout.addWidget(
+        panel_layout.addWidget(
             self.action_button, alignment=Qt.AlignmentFlag.AlignRight
         )
 
@@ -125,22 +159,38 @@ class CharacterWindow(QWidget):
         self.continue_button.setObjectName("continueHint")
         self.continue_button.hide()
         self.continue_button.clicked.connect(self.show_next_message)
-        bubble_layout.addWidget(
+        panel_layout.addWidget(
             self.continue_button, alignment=Qt.AlignmentFlag.AlignRight
         )
+        bubble_layout.addWidget(self.bubble_panel)
+
+        tail_row = QHBoxLayout()
+        tail_row.setContentsMargins(0, 0, 24, 0)
+        tail_row.addStretch()
+        self.bubble_tail = BubbleTail()
+        self.bubble_tail.setObjectName("bubbleTail")
+        tail_row.addWidget(self.bubble_tail)
+        bubble_layout.addLayout(tail_row)
         self.bubble_row.addWidget(self.bubble_card)
         self.root_layout.addLayout(self.bubble_row)
+
+        self.character_stage = QWidget()
+        self.character_stage.setObjectName("characterStage")
+        stage_layout = QGridLayout(self.character_stage)
+        stage_layout.setContentsMargins(0, 0, 0, 0)
+        stage_layout.setSpacing(0)
 
         self.character = QLabel()
         self.character.setAlignment(
             Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignBottom
         )
         self.character.setMinimumSize(QSize(235, 285))
-        self.root_layout.addWidget(self.character, 1)
+        stage_layout.addWidget(self.character, 0, 0)
 
         self.controls = QWidget()
+        self.controls.setObjectName("characterControls")
         note_row = QHBoxLayout(self.controls)
-        note_row.setContentsMargins(0, 0, 0, 0)
+        note_row.setContentsMargins(8, 0, 6, 7)
         self.collapse_button = QPushButton("收起")
         self.collapse_button.setObjectName("collapseButton")
         self.collapse_button.setToolTip("收起为桌面边缘小挂件")
@@ -155,7 +205,13 @@ class CharacterWindow(QWidget):
         self.size_grip.setToolTip("拖动调节角色大小")
         self.size_grip.setFixedSize(18, 18)
         note_row.addWidget(self.size_grip)
-        self.root_layout.addWidget(self.controls)
+        stage_layout.addWidget(
+            self.controls,
+            0,
+            0,
+            alignment=Qt.AlignmentFlag.AlignBottom,
+        )
+        self.root_layout.addWidget(self.character_stage, 1)
 
         self.launcher_button = QPushButton("晷")
         self.launcher_button.setObjectName("launcherButton")
@@ -166,10 +222,14 @@ class CharacterWindow(QWidget):
 
         self.setStyleSheet(
             """
-            QWidget#bubbleCard {
+            QWidget#bubbleCard { background: transparent; }
+            QWidget#bubblePanel {
                 background: rgba(247, 250, 246, 242);
                 border: 1px solid rgba(151, 170, 153, 245);
                 border-radius: 14px;
+            }
+            QWidget#characterStage, QWidget#characterControls {
+                background: transparent;
             }
             QLabel#speechBubble {
                 color: #21372c;
@@ -196,16 +256,18 @@ class CharacterWindow(QWidget):
             }
             QPushButton#continueHint:hover { color: #315d45; }
             QPushButton#noteButton {
-                color: #214331; background: rgba(220, 232, 216, 238);
-                border: 1px solid rgba(137, 165, 143, 225);
-                border-radius: 9px; padding: 7px 11px;
-                font: 12px "Microsoft YaHei UI";
+                color: #234735; background: rgba(221, 233, 218, 185);
+                border: 1px solid rgba(132, 162, 138, 190);
+                border-radius: 8px; padding: 5px 9px;
+                font: 11px "Microsoft YaHei UI";
             }
-            QPushButton#noteButton:hover { background: #cbdcc8; }
+            QPushButton#noteButton:hover {
+                background: rgba(203, 220, 200, 235);
+            }
             QPushButton#collapseButton {
-                color: #526b5c; background: rgba(247,250,246,190);
-                border: 1px solid rgba(166,184,168,210);
-                border-radius: 8px; padding: 6px 9px;
+                color: #3f5f4c; background: rgba(242,247,241,165);
+                border: 1px solid rgba(150,174,154,185);
+                border-radius: 8px; padding: 5px 8px;
                 font: 11px "Microsoft YaHei UI";
             }
             QPushButton#collapseButton:hover {
@@ -426,6 +488,7 @@ class CharacterWindow(QWidget):
         self.bubble_card.hide()
         self.character.hide()
         self.controls.hide()
+        self.character_stage.hide()
         self.size_grip.hide()
         self.launcher_button.show()
         self.root_layout.setContentsMargins(6, 6, 6, 6)
@@ -452,6 +515,7 @@ class CharacterWindow(QWidget):
         self._collapsed = False
         self._settings.setValue("character_collapsed", False)
         self.launcher_button.hide()
+        self.character_stage.show()
         self.character.show()
         self.controls.show()
         self.size_grip.show()

@@ -37,25 +37,34 @@ class TaskNoteWindow(QWidget):
     def _build_ui(self):
         self.setStyleSheet(
             """
-            QWidget { background: #fffda8; color: #27231f; }
-            QLabel#noteTitle { font: 600 16px "Microsoft YaHei UI"; }
+            QWidget { background: #dfe9df; color: #183c2a; }
+            QLabel#noteTitle {
+                color: #173d2a; background: transparent;
+                font: 700 16px "Microsoft YaHei UI";
+            }
             QCheckBox {
                 background: transparent; padding: 5px 3px;
                 font: 14px "Microsoft YaHei UI";
             }
-            QCheckBox:checked { color: #777151; text-decoration: line-through; }
+            QCheckBox:checked { color: #75877a; text-decoration: line-through; }
             QTextEdit {
-                background: rgba(255,255,255,100); border: 0;
+                color: #213b2d; background: rgba(250,252,249,205);
+                border: 1px solid #bdcdbf; border-radius: 6px;
                 padding: 8px; font: 14px "Microsoft YaHei UI";
+                selection-background-color: #527b63;
             }
             QPushButton {
-                background: transparent; border: 0;
+                color: #294b37; background: transparent; border: 0;
                 padding: 7px 12px; font: 14px "Microsoft YaHei UI";
             }
-            QPushButton:hover { background: rgba(0,0,0,18); }
+            QPushButton:hover { background: rgba(43, 83, 59, 22); }
             QPushButton#saveNote {
-                background: #77bde5; border-radius: 7px; font-weight: 600;
+                color: white; background: #24513b;
+                border: 1px solid #24513b;
+                border-radius: 7px; font-weight: 600;
             }
+            QPushButton#saveNote:hover { background: #183d2b; }
+            QScrollArea { background: transparent; border: 0; }
             """
         )
         layout = QVBoxLayout(self)
@@ -69,7 +78,7 @@ class TaskNoteWindow(QWidget):
         title_row.addStretch()
         self.date_label = QLabel()
         self.date_label.setStyleSheet(
-            "color: #817a55; font-size: 12px; background: transparent;"
+            "color: #607567; font-size: 12px; background: transparent;"
         )
         title_row.addWidget(self.date_label)
         close_button = QPushButton("×")
@@ -80,7 +89,7 @@ class TaskNoteWindow(QWidget):
         self.refresh_date()
 
         hint = QLabel("勾选后才算完成")
-        hint.setStyleSheet("color: #817a55; font-size: 12px;")
+        hint.setStyleSheet("color: #607567; font-size: 12px;")
         layout.addWidget(hint)
 
         self.task_container = QWidget()
@@ -95,7 +104,7 @@ class TaskNoteWindow(QWidget):
         layout.addWidget(task_scroll, 1)
 
         add_hint = QLabel("新增任务（一行一项）")
-        add_hint.setStyleSheet("color: #817a55; font-size: 12px;")
+        add_hint.setStyleSheet("color: #607567; font-size: 12px;")
         layout.addWidget(add_hint)
         self.editor = QTextEdit()
         self.editor.setFixedHeight(48)
@@ -128,7 +137,7 @@ class TaskNoteWindow(QWidget):
 
         if not tasks:
             empty = QLabel("还没有任务")
-            empty.setStyleSheet("color: #918a67; padding: 8px;")
+            empty.setStyleSheet("color: #718276; padding: 8px;")
             self.task_layout.insertWidget(0, empty)
         self.editor.clear()
 
