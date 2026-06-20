@@ -7,7 +7,7 @@ from pathlib import Path
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import QPoint, QSize, QTime, Qt
-from PySide6.QtWidgets import QApplication, QCheckBox
+from PySide6.QtWidgets import QApplication, QCheckBox, QGroupBox
 
 from core.config import Config
 from core.db import DB
@@ -196,6 +196,24 @@ class MainWindowTests(unittest.TestCase):
         )
         self.assertEqual(note.minimumSize(), QSize(280, 220))
         self.assertEqual(self.window.minimumSize(), QSize(680, 500))
+
+    def test_settings_page_scrolls_instead_of_clipping_groups(self):
+        self.window.resize(700, 500)
+        self.window.tabs.setCurrentIndex(4)
+        self.window.show()
+        self.app.processEvents()
+
+        groups = self.window.settings_scroll.widget().findChildren(QGroupBox)
+
+        self.assertTrue(self.window.settings_scroll.widgetResizable())
+        self.assertGreater(
+            self.window.settings_scroll.verticalScrollBar().maximum(),
+            0,
+        )
+        self.assertTrue(groups)
+        self.assertTrue(
+            all(group.height() >= group.minimumSizeHint().height() for group in groups)
+        )
 
     def test_character_emotion_changes_for_review_and_response(self):
         self.window.character_window.RESPONSE_TIMEOUT_MS = 1

@@ -16,11 +16,14 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QLabel,
     QLineEdit,
+    QLayout,
     QListWidget,
     QMainWindow,
     QMenu,
     QMessageBox,
     QPushButton,
+    QScrollArea,
+    QSizePolicy,
     QSpinBox,
     QSplitter,
     QTabWidget,
@@ -250,9 +253,33 @@ class MainWindow(QMainWindow):
 
     def _build_settings_tab(self):
         page = QWidget()
-        layout = QVBoxLayout(page)
+        page_layout = QVBoxLayout(page)
+        page_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.settings_scroll = QScrollArea()
+        self.settings_scroll.setWidgetResizable(True)
+        self.settings_scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        self.settings_scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        page_layout.addWidget(self.settings_scroll)
+
+        content = QWidget()
+        content.setObjectName("settingsContent")
+        layout = QVBoxLayout(content)
+        layout.setContentsMargins(12, 14, 12, 14)
+        layout.setSpacing(12)
+        layout.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
+        self.settings_scroll.setWidget(content)
+
         persona_box = QGroupBox("人格与称呼")
+        persona_box.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+        )
         persona_form = QFormLayout(persona_box)
+        persona_form.setFieldGrowthPolicy(
+            QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow
+        )
         self.persona_choice = QComboBox()
         self.persona_choice.addItems(VALID_PERSONAS)
         self.persona_name = QLineEdit()
@@ -263,7 +290,13 @@ class MainWindow(QMainWindow):
         layout.addWidget(persona_box)
 
         schedule_box = QGroupBox("提醒时间")
+        schedule_box.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+        )
         schedule_form = QFormLayout(schedule_box)
+        schedule_form.setFieldGrowthPolicy(
+            QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow
+        )
         self.summary_time = QTimeEdit()
         self.summary_time.setDisplayFormat("HH:mm")
         schedule_form.addRow("总结检查", self.summary_time)
@@ -274,6 +307,9 @@ class MainWindow(QMainWindow):
         layout.addWidget(schedule_box)
 
         privacy_box = QGroupBox("隐私与 AI")
+        privacy_box.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+        )
         privacy_layout = QVBoxLayout(privacy_box)
         self.ai_enabled = QCheckBox("启用 DeepSeek 智能分析")
         privacy_layout.addWidget(self.ai_enabled)
@@ -282,16 +318,23 @@ class MainWindow(QMainWindow):
             "用于生成任务建议和复盘反馈。关闭后仅使用本地提醒，数据不会发送到云端。"
         )
         privacy_notice.setWordWrap(True)
+        privacy_notice.setMinimumHeight(44)
         privacy_layout.addWidget(privacy_notice)
         layout.addWidget(privacy_box)
 
         system_box = QGroupBox("系统")
+        system_box.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+        )
         system_layout = QVBoxLayout(system_box)
         self.startup_enabled = QCheckBox("登录 Windows 后自动启动")
         system_layout.addWidget(self.startup_enabled)
         layout.addWidget(system_box)
 
         data_box = QGroupBox("数据保护")
+        data_box.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+        )
         data_layout = QHBoxLayout(data_box)
         backup_button = QPushButton("备份数据库")
         backup_button.clicked.connect(self.backup_database)
@@ -380,6 +423,10 @@ class MainWindow(QMainWindow):
             QStatusBar {
                 color: #627269; background: #e8eee8;
                 border-top: 1px solid #d0dbd2;
+            }
+            QScrollArea, QWidget#settingsContent {
+                background: #f8faf7;
+                border: 0;
             }
             """
         )
