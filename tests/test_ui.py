@@ -171,6 +171,15 @@ class MainWindowTests(unittest.TestCase):
             [task["title"] for task in self.db.get_today_tasks()],
             ["阅读论文一篇"],
         )
+        self.assertTrue(note.isVisible())
+        self.assertIn(
+            "阅读论文一篇",
+            [
+                note.task_layout.itemAt(index).widget().text()
+                for index in range(note.task_layout.count() - 1)
+                if isinstance(note.task_layout.itemAt(index).widget(), QCheckBox)
+            ],
+        )
 
     def test_windows_have_practical_resize_bounds(self):
         note = self.window.task_note
@@ -538,6 +547,8 @@ class MainWindowTests(unittest.TestCase):
         self.assertEqual(character.size(), character.COLLAPSED_SIZE)
         self.assertTrue(character.launcher_button.isVisible())
         self.assertEqual(character.launcher_button.text(), "晷")
+        self.assertGreater(character.launcher_button.width(), 0)
+        self.assertGreater(character.launcher_button.height(), 0)
 
         character.expand()
 

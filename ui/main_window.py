@@ -480,12 +480,7 @@ class MainWindow(QMainWindow):
             self.tray_icon.show()
 
     def _show_task_note(self):
-        tasks = [
-            {"id": task["task_id"], "title": task["title"], "status": task["status"]}
-            for task in agent.prepare_evening_review(self.db)
-            if task["status"] in {"pending", "done"}
-        ]
-        self.task_note.set_tasks(tasks)
+        self.task_note.set_tasks(self._note_tasks())
         position = self.character_window.pos()
         self.task_note.move(
             max(0, position.x() - self.task_note.width() - 12),
@@ -494,6 +489,13 @@ class MainWindow(QMainWindow):
         self.task_note.show()
         self.task_note.raise_()
         self.task_note.activateWindow()
+
+    def _note_tasks(self):
+        return [
+            {"id": task["task_id"], "title": task["title"], "status": task["status"]}
+            for task in agent.prepare_evening_review(self.db)
+            if task["status"] in {"pending", "done"}
+        ]
 
     def _handle_character_action(self, action_id):
         if action_id == "tasks":
@@ -532,9 +534,11 @@ class MainWindow(QMainWindow):
                 source="今日便签",
                 scheduled_date=task_date,
             )
-        self.task_note.hide()
         self.refresh_tasks()
         self.refresh_review()
+        self.task_note.set_tasks(self._note_tasks())
+        self.task_note.show()
+        self.task_note.raise_()
         if not new_titles:
             self.character_window.show_full_message("这些任务已经在今日便签里了。")
             return

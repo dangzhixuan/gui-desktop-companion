@@ -218,7 +218,10 @@ class CharacterWindow(QWidget):
         self.launcher_button.setToolTip("点击展开晷")
         self.launcher_button.installEventFilter(self)
         self.launcher_button.hide()
-        self.root_layout.addWidget(self.launcher_button)
+        self.root_layout.addWidget(
+            self.launcher_button,
+            alignment=Qt.AlignmentFlag.AlignCenter,
+        )
 
         self.setStyleSheet(
             """
@@ -498,13 +501,31 @@ class CharacterWindow(QWidget):
         screen = self.screen() or QApplication.primaryScreen()
         saved_collapsed = self._settings.value("character_collapsed_position")
         if isinstance(saved_collapsed, QPoint):
-            self.move(saved_collapsed)
+            target = saved_collapsed
         elif screen:
             area = screen.availableGeometry()
-            self.move(
+            target = QPoint(
                 area.right() - self.width() - 8,
                 min(max(self.y(), area.top() + 8), area.bottom() - self.height() - 8),
             )
+        else:
+            target = self.pos()
+        if screen:
+            area = screen.availableGeometry()
+            target = QPoint(
+                min(
+                    max(target.x(), area.left() + 8),
+                    area.right() - self.width() - 8,
+                ),
+                min(
+                    max(target.y(), area.top() + 8),
+                    area.bottom() - self.height() - 8,
+                ),
+            )
+        self.move(target)
+        self.show()
+        self.launcher_button.show()
+        self.launcher_button.raise_()
         self.raise_()
 
     def expand(self):
