@@ -6,9 +6,9 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QPushButton,
     QScrollArea,
-    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
@@ -30,8 +30,12 @@ class TaskNoteWindow(QWidget):
         )
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, False)
         self.resize(330, 245)
+        self.setMinimumSize(280, 220)
         self._dragging = False
         self._drag_offset = QPoint()
+        self._tasks = []
+        self._draft_titles = []
+        self._resize_margin = 7
         self._build_ui()
 
     def _build_ui(self):
@@ -47,11 +51,14 @@ class TaskNoteWindow(QWidget):
                 font: 14px "Microsoft YaHei UI";
             }
             QCheckBox:checked { color: #75877a; text-decoration: line-through; }
-            QTextEdit {
+            QLineEdit {
                 color: #213b2d; background: rgba(250,252,249,205);
                 border: 1px solid #bdcdbf; border-radius: 6px;
                 padding: 8px; font: 14px "Microsoft YaHei UI";
                 selection-background-color: #527b63;
+            }
+            QCheckBox[draft="true"] {
+                color: #456653; font-style: italic;
             }
             QPushButton {
                 color: #294b37; background: transparent; border: 0;
@@ -103,12 +110,13 @@ class TaskNoteWindow(QWidget):
         task_scroll.setWidget(self.task_container)
         layout.addWidget(task_scroll, 1)
 
-        add_hint = QLabel("新增任务（一行一项）")
+        add_hint = QLabel("新增任务（输入后按回车加入上方）")
         add_hint.setStyleSheet("color: #607567; font-size: 12px;")
         layout.addWidget(add_hint)
-        self.editor = QTextEdit()
-        self.editor.setFixedHeight(48)
+        self.editor = QLineEdit()
+        self.editor.setFixedHeight(42)
         self.editor.setPlaceholderText("完成阅读论文一篇")
+        self.editor.returnPressed.connect(self._stage_editor_task)
         layout.addWidget(self.editor)
 
         save = QPushButton("保存")
@@ -118,13 +126,19 @@ class TaskNoteWindow(QWidget):
 
     def set_tasks(self, tasks):
         self.refresh_date()
+        self._tasks = list(tasks)
+        self._draft_titles.clear()
+        self.editor.clear()
+        self._render_tasks()
+
+    def _render_tasks(self):
         while self.task_layout.count() > 1:
             item = self.task_layout.takeAt(0)
             widget = item.widget()
             if widget:
                 widget.deleteLater()
 
-        for task in tasks:
+        for task in self._tasks:
             checkbox = QCheckBox(task["title"])
             is_done = task["status"] == "done"
             checkbox.setChecked(is_done)
@@ -135,11 +149,35 @@ class TaskNoteWindow(QWidget):
             )
             self.task_layout.insertWidget(self.task_layout.count() - 1, checkbox)
 
-        if not tasks:
+        for title in self._draft_titles:
+            checkbox = QCheckBox(f"{title}  （待保存）")
+            checkbox.setProperty("draft", True)
+            checkbox.setEnabled(False)
+            self.task_layout.insertWidget(self.task_layout.count() - 1, checkbox)
+
+        if not self._tasks and not self._draft_titles:
             empty = QLabel("还没有任务")
             empty.setStyleSheet("color: #718276; padding: 8px;")
             self.task_layout.insertWidget(0, empty)
+
+    @staticmethod
+    def _clean_title(text):
+        return str(text).strip().lstrip("□☐-•·0123456789.、 ")
+
+    def _stage_editor_task(self):
+        title = self._clean_title(self.editor.text())
+        if not title:
+            return
+        existing = {
+            task["title"].strip()
+            for task in self._tasks
+        } | set(self._draft_titles)
         self.editor.clear()
+        if title in existing:
+            return
+        self._draft_titles.append(title)
+        self._render_tasks()
+        self.editor.setFocus()
 
     def refresh_date(self):
         today = date.today()
@@ -153,12 +191,10 @@ class TaskNoteWindow(QWidget):
         self.task_toggled.emit(int(task_id), is_done)
 
     def _save(self):
-        tasks = [
-            line.strip().lstrip("□☐-•·0123456789.、 ")
-            for line in self.editor.toPlainText().splitlines()
-            if line.strip()
-        ]
+        self._stage_editor_task()
+        tasks = list(self._draft_titles)
         if tasks:
+            self._draft_titles.clear()
             self.tasks_saved.emit(tasks)
 
     def closeEvent(self, event: QCloseEvent):
@@ -166,6 +202,12 @@ class TaskNoteWindow(QWidget):
         self.hide()
 
     def mousePressEvent(self, event: QMouseEvent):
+        if event.button() == Qt.MouseButton.LeftButton:
+            edges = self._resize_edges_at(event.position().toPoint())
+            if edges and self.windowHandle():
+                self.windowHandle().startSystemResize(edges)
+                event.accept()
+                return
         if event.button() == Qt.MouseButton.LeftButton and event.position().y() < 52:
             self._dragging = True
             self._drag_offset = (
@@ -180,9 +222,46 @@ class TaskNoteWindow(QWidget):
             self.move(event.globalPosition().toPoint() - self._drag_offset)
             event.accept()
             return
+        self._update_resize_cursor(event.position().toPoint())
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event: QMouseEvent):
         if event.button() == Qt.MouseButton.LeftButton:
             self._dragging = False
         super().mouseReleaseEvent(event)
+
+    def leaveEvent(self, event):
+        if not self._dragging:
+            self.unsetCursor()
+        super().leaveEvent(event)
+
+    def _resize_edges_at(self, position):
+        edges = Qt.Edges()
+        if position.x() <= self._resize_margin:
+            edges |= Qt.Edge.LeftEdge
+        elif position.x() >= self.width() - self._resize_margin:
+            edges |= Qt.Edge.RightEdge
+        if position.y() <= self._resize_margin:
+            edges |= Qt.Edge.TopEdge
+        elif position.y() >= self.height() - self._resize_margin:
+            edges |= Qt.Edge.BottomEdge
+        return edges
+
+    def _update_resize_cursor(self, position):
+        edges = self._resize_edges_at(position)
+        if edges in (
+            Qt.Edge.LeftEdge | Qt.Edge.TopEdge,
+            Qt.Edge.RightEdge | Qt.Edge.BottomEdge,
+        ):
+            self.setCursor(Qt.CursorShape.SizeFDiagCursor)
+        elif edges in (
+            Qt.Edge.RightEdge | Qt.Edge.TopEdge,
+            Qt.Edge.LeftEdge | Qt.Edge.BottomEdge,
+        ):
+            self.setCursor(Qt.CursorShape.SizeBDiagCursor)
+        elif edges & (Qt.Edge.LeftEdge | Qt.Edge.RightEdge):
+            self.setCursor(Qt.CursorShape.SizeHorCursor)
+        elif edges & (Qt.Edge.TopEdge | Qt.Edge.BottomEdge):
+            self.setCursor(Qt.CursorShape.SizeVerCursor)
+        else:
+            self.unsetCursor()

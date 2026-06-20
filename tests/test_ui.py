@@ -6,8 +6,8 @@ from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtCore import QPoint, QSize, QTime
-from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import QPoint, QSize, QTime, Qt
+from PySide6.QtWidgets import QApplication, QCheckBox
 
 from core.config import Config
 from core.db import DB
@@ -145,6 +145,48 @@ class MainWindowTests(unittest.TestCase):
         self.window._show_task_note()
 
         self.assertIn(date.today().strftime("%Y.%m.%d"), self.window.task_note.date_label.text())
+
+    def test_pressing_enter_stages_task_until_save(self):
+        self.window._run_background = (
+            lambda _fn, on_success, _on_error: on_success("任务已保存。")
+        )
+        note = self.window.task_note
+        self.window._show_task_note()
+        note.editor.setText("阅读论文一篇")
+
+        note.editor.returnPressed.emit()
+
+        self.assertEqual(note._draft_titles, ["阅读论文一篇"])
+        self.assertEqual(self.db.get_today_tasks(), [])
+        draft_texts = [
+            note.task_layout.itemAt(index).widget().text()
+            for index in range(note.task_layout.count() - 1)
+            if isinstance(note.task_layout.itemAt(index).widget(), QCheckBox)
+        ]
+        self.assertIn("阅读论文一篇  （待保存）", draft_texts)
+
+        note._save()
+
+        self.assertEqual(
+            [task["title"] for task in self.db.get_today_tasks()],
+            ["阅读论文一篇"],
+        )
+
+    def test_windows_have_practical_resize_bounds(self):
+        note = self.window.task_note
+
+        self.assertEqual(
+            note._resize_edges_at(QPoint(1, 1)),
+            Qt.Edge.LeftEdge | Qt.Edge.TopEdge,
+        )
+        self.assertEqual(
+            note._resize_edges_at(
+                QPoint(note.width() - 1, note.height() - 1)
+            ),
+            Qt.Edge.RightEdge | Qt.Edge.BottomEdge,
+        )
+        self.assertEqual(note.minimumSize(), QSize(280, 220))
+        self.assertEqual(self.window.minimumSize(), QSize(680, 500))
 
     def test_character_emotion_changes_for_review_and_response(self):
         self.window.character_window.RESPONSE_TIMEOUT_MS = 1

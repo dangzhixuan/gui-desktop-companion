@@ -96,6 +96,7 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle("晷 · 管理中心")
         self.resize(820, 610)
+        self.setMinimumSize(680, 500)
         self._build_ui()
         self._apply_style()
         self._setup_character()
