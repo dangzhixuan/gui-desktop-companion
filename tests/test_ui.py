@@ -6,7 +6,7 @@ from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtCore import QSize, QTime
+from PySide6.QtCore import QPoint, QSize, QTime
 from PySide6.QtWidgets import QApplication
 
 from core.config import Config
@@ -502,6 +502,33 @@ class MainWindowTests(unittest.TestCase):
         self.assertFalse(character.is_collapsed)
         self.assertEqual(character.size(), expanded_size)
         self.assertTrue(character.character.isVisible())
+
+    def test_collapsed_launcher_can_be_dragged_without_expanding(self):
+        character = self.window.character_window
+        character.collapse()
+        start = character.pos()
+        press = character.frameGeometry().topLeft() + QPoint(20, 20)
+
+        character._begin_drag(press)
+        character._continue_drag(press + QPoint(80, 45))
+        character._finish_drag()
+
+        self.assertTrue(character.is_collapsed)
+        self.assertEqual(character.pos(), start + QPoint(80, 45))
+        self.assertEqual(
+            character._settings.value("character_collapsed_position"),
+            character.pos(),
+        )
+
+    def test_clicking_collapsed_launcher_expands_character(self):
+        character = self.window.character_window
+        character.collapse()
+        press = character.frameGeometry().topLeft() + QPoint(20, 20)
+
+        character._begin_drag(press)
+        character._finish_drag()
+
+        self.assertFalse(character.is_collapsed)
 
     def test_character_size_can_be_changed_and_restored_after_collapse(self):
         character = self.window.character_window

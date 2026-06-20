@@ -2,7 +2,7 @@ from pathlib import Path
 import re
 import sys
 
-from PySide6.QtCore import QPoint, QSettings, QSize, Qt, QTimer, Signal
+from PySide6.QtCore import QEvent, QPoint, QSettings, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QMouseEvent, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
@@ -160,7 +160,7 @@ class CharacterWindow(QWidget):
         self.launcher_button = QPushButton("晷")
         self.launcher_button.setObjectName("launcherButton")
         self.launcher_button.setToolTip("点击展开晷")
-        self.launcher_button.clicked.connect(self.expand)
+        self.launcher_button.installEventFilter(self)
         self.launcher_button.hide()
         self.root_layout.addWidget(self.launcher_button)
 
@@ -433,7 +433,10 @@ class CharacterWindow(QWidget):
         self.setMaximumSize(self.COLLAPSED_SIZE)
         self.resize(self.COLLAPSED_SIZE)
         screen = self.screen() or QApplication.primaryScreen()
-        if screen:
+        saved_collapsed = self._settings.value("character_collapsed_position")
+        if isinstance(saved_collapsed, QPoint):
+            self.move(saved_collapsed)
+        elif screen:
             area = screen.availableGeometry()
             self.move(
                 area.right() - self.width() - 8,
@@ -508,33 +511,74 @@ class CharacterWindow(QWidget):
             self.collapse()
         self.raise_()
 
+    def _begin_drag(self, global_position):
+        self._press_position = global_position
+        self._moved_during_press = False
+        self._drag_offset = global_position - self.frameGeometry().topLeft()
+        self._dragging = True
+
+    def _continue_drag(self, global_position):
+        if not self._dragging:
+            return
+        if (
+            global_position - self._press_position
+        ).manhattanLength() > QApplication.startDragDistance():
+            self._moved_during_press = True
+        self.move(global_position - self._drag_offset)
+
+    def _finish_drag(self):
+        was_dragging = self._dragging
+        self._dragging = False
+        if not was_dragging:
+            return
+        if self._collapsed:
+            self._settings.setValue("character_collapsed_position", self.pos())
+            if not self._moved_during_press:
+                self.expand()
+        else:
+            self._settings.setValue("character_position", self.pos())
+            if not self._moved_during_press:
+                self.character_clicked.emit()
+
+    def eventFilter(self, watched, event):
+        if watched is self.launcher_button:
+            if (
+                event.type() == QEvent.Type.MouseButtonPress
+                and event.button() == Qt.MouseButton.LeftButton
+            ):
+                self._begin_drag(event.globalPosition().toPoint())
+                return True
+            if (
+                event.type() == QEvent.Type.MouseMove
+                and event.buttons() & Qt.MouseButton.LeftButton
+            ):
+                self._continue_drag(event.globalPosition().toPoint())
+                return True
+            if (
+                event.type() == QEvent.Type.MouseButtonRelease
+                and event.button() == Qt.MouseButton.LeftButton
+            ):
+                self._finish_drag()
+                return True
+        return super().eventFilter(watched, event)
+
     def mousePressEvent(self, event: QMouseEvent):
         if event.button() == Qt.MouseButton.LeftButton:
-            self._press_position = event.globalPosition().toPoint()
-            self._moved_during_press = False
-            self._drag_offset = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
-            self._dragging = True
+            self._begin_drag(event.globalPosition().toPoint())
             event.accept()
             return
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event: QMouseEvent):
         if self._dragging and event.buttons() & Qt.MouseButton.LeftButton:
-            if (
-                event.globalPosition().toPoint() - self._press_position
-            ).manhattanLength() > QApplication.startDragDistance():
-                self._moved_during_press = True
-            self.move(event.globalPosition().toPoint() - self._drag_offset)
+            self._continue_drag(event.globalPosition().toPoint())
             event.accept()
             return
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event: QMouseEvent):
         if event.button() == Qt.MouseButton.LeftButton and self._dragging:
-            self._dragging = False
-            self._settings.setValue("character_position", self.pos())
-            if not self._moved_during_press and not self._collapsed:
-                self.character_clicked.emit()
+            self._finish_drag()
             event.accept()
             return
         super().mouseReleaseEvent(event)
