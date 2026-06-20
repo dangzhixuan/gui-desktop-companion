@@ -1,0 +1,20 @@
+# 可公开提交的配置示例。可在下方填写 Key；环境变量 DEEPSEEK_API_KEY 优先。
+
+[persona]
+choice = "温柔陪伴"
+name = "小晷"
+address = "你"
+
+[schedule]
+morning = "08:30"
+noon = "12:30"
+evening_greeting = "21:00"
+summary = "22:00"
+quote_interval_minutes = 90  # 白天任务提醒间隔(分钟)
+
+[llm]
+enabled = true  # 关闭后仅使用本地任务提醒，不发送任何内容到云端
+provider = "deepseek"
+model = "deepseek-chat"
+api_key = ""  # 个人本地使用可填写；不要提交真实 Key
+base_url = "https://api.deepseek.com"

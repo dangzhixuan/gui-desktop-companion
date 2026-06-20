@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+# Local secrets and environment
+.env
+.env.*
+!.env.example
+config.toml
+
+# Local databases and test artifacts
+*.db
+*.db-shm
+*.db-wal
+*.log
+*_preview.png
+
+# Build artifacts
+build/
+dist/
+
+# IDE / OS
+.idea/
+.vscode/
+Thumbs.db
+Desktop.ini
