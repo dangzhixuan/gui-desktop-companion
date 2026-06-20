@@ -45,7 +45,7 @@ python -m venv venv
 
 构建结果：
 
-- `dist\Gnomon.exe`：独立可执行文件；
+- `dist\Gnomon\Gnomon.exe`：免安装目录版；
 - 安装 Inno Setup 后还会生成 `dist\installer\GnomonSetup.exe`。
 
 ## 测试
