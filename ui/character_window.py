@@ -66,8 +66,8 @@ class CharacterWindow(QWidget):
     action_finished = Signal(str)
     note_requested = Signal()
     RESPONSE_TIMEOUT_MS = 5 * 60 * 1000
-    EXPANDED_SIZE = QSize(285, 430)
-    MIN_EXPANDED_SIZE = QSize(220, 330)
+    EXPANDED_SIZE = QSize(360, 450)
+    MIN_EXPANDED_SIZE = QSize(300, 350)
     MAX_EXPANDED_SIZE = QSize(520, 780)
     COLLAPSED_SIZE = QSize(62, 62)
 
@@ -134,14 +134,14 @@ class CharacterWindow(QWidget):
         self.bubble_panel = QWidget()
         self.bubble_panel.setObjectName("bubblePanel")
         panel_layout = QVBoxLayout(self.bubble_panel)
-        panel_layout.setContentsMargins(14, 12, 14, 10)
-        panel_layout.setSpacing(8)
+        panel_layout.setContentsMargins(20, 15, 20, 12)
+        panel_layout.setSpacing(10)
 
         self.bubble = QLabel()
         self.bubble.setObjectName("speechBubble")
         self.bubble.setWordWrap(True)
-        self.bubble.setMaximumWidth(220)
-        self.bubble.setMinimumWidth(155)
+        self.bubble.setMaximumWidth(310)
+        self.bubble.setMinimumWidth(260)
         self.bubble.setSizePolicy(
             QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum
         )
@@ -239,7 +239,8 @@ class CharacterWindow(QWidget):
                 background: transparent;
                 border: 0;
                 padding: 0;
-                font: 13px "Microsoft YaHei UI";
+                font-family: "KaiTi", "STKaiti", "Microsoft YaHei UI";
+                font-size: 15px;
             }
             QPushButton#bubbleAction {
                 color: white;
@@ -361,9 +362,9 @@ class CharacterWindow(QWidget):
         ]
         pages = []
         for sentence in sentences or [text]:
-            while len(sentence) > 42:
-                pages.append(sentence[:42].rstrip() + "……")
-                sentence = sentence[42:].lstrip()
+            while len(sentence) > 58:
+                pages.append(sentence[:58].rstrip() + "……")
+                sentence = sentence[58:].lstrip()
             if sentence:
                 pages.append(sentence)
         return pages or ["……"]

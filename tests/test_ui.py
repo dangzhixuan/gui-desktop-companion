@@ -95,6 +95,13 @@ class MainWindowTests(unittest.TestCase):
 
         self.assertEqual(self.window.streak_label.text(), "连续复盘 1 天")
 
+    def test_manager_uses_kaiti_font_with_safe_fallbacks(self):
+        style = self.window.styleSheet()
+
+        self.assertIn('"KaiTi"', style)
+        self.assertIn('"STKaiti"', style)
+        self.assertIn('"Microsoft YaHei UI"', style)
+
     def test_settings_only_expose_summary_and_task_interval(self):
         self.assertTrue(hasattr(self.window, "summary_time"))
         self.assertFalse(hasattr(self.window, "schedule_edits"))
@@ -464,6 +471,12 @@ class MainWindowTests(unittest.TestCase):
         self.assertEqual(character.bubble.text(), "第二句话。")
         self.assertFalse(character.continue_button.isVisible())
         self.assertTrue(character.action_button.isVisible())
+
+    def test_character_bubble_uses_roomy_width(self):
+        character = self.window.character_window
+
+        self.assertGreaterEqual(character.bubble.minimumWidth(), 260)
+        self.assertGreaterEqual(character.EXPANDED_SIZE.width(), 360)
 
     def test_note_tasks_are_saved_and_analysis_is_shown(self):
         self.window._run_background = (

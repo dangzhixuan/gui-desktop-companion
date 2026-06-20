@@ -356,7 +356,10 @@ class MainWindow(QMainWindow):
         self.setStyleSheet(
             """
             QMainWindow, QWidget { background: #f3f6f2; color: #20352a; }
-            QWidget { font-size: 14px; font-family: "Microsoft YaHei UI"; }
+            QWidget {
+                font-size: 14px;
+                font-family: "KaiTi", "STKaiti", "Microsoft YaHei UI";
+            }
             QLabel#appTitle { font-size: 28px; font-weight: 700; color: #173d2a; }
             QLabel#subtitle { color: #718076; margin-left: 8px; }
             QLabel#streakBadge, QLabel#infoCard {
