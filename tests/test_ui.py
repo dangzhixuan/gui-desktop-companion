@@ -101,6 +101,7 @@ class MainWindowTests(unittest.TestCase):
         self.assertIn('"KaiTi"', style)
         self.assertIn('"STKaiti"', style)
         self.assertIn('"Microsoft YaHei UI"', style)
+        self.assertIn("font-weight: 500", style)
 
     def test_settings_only_expose_summary_and_task_interval(self):
         self.assertTrue(hasattr(self.window, "summary_time"))
@@ -477,6 +478,8 @@ class MainWindowTests(unittest.TestCase):
 
         self.assertGreaterEqual(character.bubble.minimumWidth(), 260)
         self.assertGreaterEqual(character.EXPANDED_SIZE.width(), 360)
+        self.assertIn('"KaiTi"', character.styleSheet())
+        self.assertIn("font-size: 20px", character.styleSheet())
 
     def test_note_tasks_are_saved_and_analysis_is_shown(self):
         self.window._run_background = (

@@ -357,7 +357,9 @@ class MainWindow(QMainWindow):
             """
             QMainWindow, QWidget { background: #f3f6f2; color: #20352a; }
             QWidget {
-                font-size: 14px;
+                color: #142c20;
+                font-size: 15px;
+                font-weight: 500;
                 font-family: "KaiTi", "STKaiti", "Microsoft YaHei UI";
             }
             QLabel#appTitle { font-size: 28px; font-weight: 700; color: #173d2a; }

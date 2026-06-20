@@ -1,6 +1,7 @@
 import sys
 
 from PySide6.QtCore import QLockFile, QStandardPaths
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QApplication
 
 from ui.main_window import MainWindow
@@ -10,6 +11,12 @@ def main():
     app = QApplication(sys.argv)
     app.setApplicationName("晷")
     app.setQuitOnLastWindowClosed(False)
+    font = QFont("KaiTi", 11, QFont.Weight.Medium)
+    font.setStyleStrategy(
+        QFont.StyleStrategy.PreferAntialias
+        | QFont.StyleStrategy.PreferQuality
+    )
+    app.setFont(font)
     lock_path = (
         QStandardPaths.writableLocation(QStandardPaths.StandardLocation.TempLocation)
         + "/gnomon_desktop_companion.lock"

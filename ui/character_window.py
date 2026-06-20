@@ -235,12 +235,13 @@ class CharacterWindow(QWidget):
                 background: transparent;
             }
             QLabel#speechBubble {
-                color: #21372c;
+                color: #10281b;
                 background: transparent;
                 border: 0;
                 padding: 0;
                 font-family: "KaiTi", "STKaiti", "Microsoft YaHei UI";
-                font-size: 15px;
+                font-size: 16px;
+                font-weight: 500;
             }
             QPushButton#bubbleAction {
                 color: white;
@@ -282,7 +283,9 @@ class CharacterWindow(QWidget):
                 border: 2px solid #dce8dc; border-radius: 23px;
                 min-width: 46px; min-height: 46px;
                 max-width: 46px; max-height: 46px;
-                font: 600 18px "Microsoft YaHei UI";
+                font-family: "KaiTi", "STKaiti", "Microsoft YaHei UI";
+                font-size: 20px;
+                font-weight: 600;
             }
             QPushButton#launcherButton:hover {
                 background: #1c4935;
